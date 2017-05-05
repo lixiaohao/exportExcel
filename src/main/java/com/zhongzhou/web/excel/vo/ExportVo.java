@@ -1,5 +1,7 @@
 package com.zhongzhou.web.excel.vo;
 
+import org.hibernate.validator.constraints.NotEmpty;
+
 import java.util.List;
 import java.util.Map;
 
@@ -12,8 +14,10 @@ import java.util.Map;
  */
 public class ExportVo {
     /**标题*/
+    @NotEmpty(message = "title 不能为空！")
     private String title;
     /**表头 ，key:字段名，value:对应中文名*/
+    @NotEmpty(message = "headRow 不能为空")
     private Map<String,String> headRow;
 
     /**每一行的值*/
@@ -45,4 +49,5 @@ public class ExportVo {
     public void setValues(List<Map<String, String>> values) {
         this.values = values;
     }
+
 }

@@ -36,8 +36,8 @@ public class ImportTemplate {
         init();
     }
 
-    public  void export(){
-        String path = "C:\\Users\\lixiaohao.ZZGRP\\Desktop\\temp\\excel\\test.xlsx";
+    public  void export(String path){
+
         try {
             FileOutputStream out = new FileOutputStream(path);
             wb.write(out);

@@ -36,12 +36,12 @@ public class ImportTemplateTest {
         params.put("class","1班");
         params.put("score","50");*/
 
-
+        String path = "C:\\Users\\lixiaohao.ZZGRP\\Desktop\\temp\\excel\\test.xlsx";
         String title = "this is first sheet";
         String sheetname = "firstsheet";
 
         ImportTemplate template = new ImportTemplate();
         template.createHeadRow(title,sheetname,params);
-        template.export();
+        template.export( path );
     }
 }
