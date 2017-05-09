@@ -5,7 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zhongzhou.component.excel.ExcelPaser;
 import com.zhongzhou.component.excel.ImportTemplate;
 import com.zhongzhou.web.excel.vo.ExportVo;
+import org.apache.commons.io.FileUtils;
 import org.junit.Test;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.ObjectError;
@@ -32,6 +37,7 @@ import java.util.Map;
  * @Create 2017-05-04 17:14
  * @Company
  */
+
 @Controller
 @RequestMapping("/excel/")
 public class ExcelController {
@@ -42,70 +48,86 @@ public class ExcelController {
         return "index.html";
     }
 
-    @RequestMapping(value = "getModel",method = RequestMethod.POST)
-    @ResponseBody
-    public String getModel(
+    @RequestMapping(value = "export",method = RequestMethod.POST)
+    public ResponseEntity<byte[]> importExcel(
+            @Valid @RequestBody ExportVo vo,
+            BindingResult result,
+            HttpServletRequest request,
+            HttpServletResponse resp){
+
+        ImportTemplate template = new ImportTemplate(vo);
+        template.createHeadRow(vo.getTitle(),"first Sheet",vo.getHeadRow());
+        template.fillContent(vo.getValues());
+        byte[] fileByte =template.exportExcel();
+
+        HttpHeaders header = new HttpHeaders();
+        String fileName = null;
+        ResponseEntity<byte[]> responseEntiry = null;
+
+        header.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        try{
+            fileName=new String("test.xlsx".getBytes("UTF-8"),"iso-8859-1");//为了解决中文名称乱码问题
+            header.setContentDispositionFormData("attachment", fileName);
+            responseEntiry = new ResponseEntity<byte[]>(fileByte,header, HttpStatus.CREATED);
+        }catch (UnsupportedEncodingException e){
+            e.printStackTrace();
+        }catch (IOException e1){
+            e1.printStackTrace();
+        }
+
+        return responseEntiry;
+    }
+
+    @RequestMapping(value = "template",method = RequestMethod.GET)
+
+    public ResponseEntity<byte[]> getTemplate(
             @Valid @RequestBody ExportVo vo,
             BindingResult result,
             HttpServletRequest request,
             HttpServletResponse response){
 
         StringBuffer str = new StringBuffer("");
-        if ( result.hasErrors() ) {
-            List<ObjectError> errorList = result.getAllErrors();
-            for(ObjectError error : errorList){
-                str.append( error.getDefaultMessage() );
-            }
-            return str.toString();
-        }
+//        if ( result.hasErrors() ) {
+//            List<ObjectError> errorList = result.getAllErrors();
+//            for(ObjectError error : errorList){
+//                str.append( error.getDefaultMessage() );
+//            }
+//            return str.toString();
+//        }
 
-        String fileName = "template.xlsx";
-        String path =  this.getClass().getClassLoader().getResource("").getPath();
-        String realPath = path.substring(0,path.indexOf("excel")+6)+fileName;
         String sheetname = "firstsheet";
 
-        ImportTemplate template = new ImportTemplate();
+        ImportTemplate template = new ImportTemplate(vo);
         template.createHeadRow(vo.getTitle(),sheetname,vo.getHeadRow());
-        template.export(realPath);
-        FileInputStream in = null;
-        OutputStream out;
-        File file = new File(realPath);
-       try {
+        byte[] fileByte = template.export();
 
-            in = new FileInputStream(file);
-            out =  response.getOutputStream();
+        HttpHeaders header = new HttpHeaders();
+        ResponseEntity<byte[]> responseEntiry = null;
 
-           response.reset();
-           response.addHeader("Content-Disposition", "attachment;filename=" + new String(file.getName().getBytes()));
-           byte[] buff = new byte[1024];
-           int len = -1;
-           while ( (len = in.read(buff))>0 ) {
-               out.write(buff,0,len);
-           }
-           out.flush();
-            in.close();
-           out.close();
+        header.setContentType(MediaType.APPLICATION_OCTET_STREAM);
 
-//           file.delete();
-       }catch (FileNotFoundException e){
-           e.printStackTrace();
+        String fileName = "template.xlsx";
+        try{
+            fileName=new String(fileName.getBytes("UTF-8"),"iso-8859-1");//为了解决中文名称乱码问题
+            header.setContentDispositionFormData("attachment", fileName);
+            responseEntiry = new ResponseEntity<byte[]>(fileByte,header, HttpStatus.CREATED);
+        }catch (UnsupportedEncodingException e){
+            e.printStackTrace();
+        }catch (IOException e1){
+            e1.printStackTrace();
+        }
 
-       }catch (IOException e1){
-           e1.printStackTrace();
-       }finally {
-       }
-
-       return "success";
+        return responseEntiry;
     }
 
 
 
     @RequestMapping(method=RequestMethod.POST, value="import")
-    public  @ResponseBody JsonResponse upload(
+    public  @ResponseBody XmlResponse upload(
             HttpServletRequest request) throws IOException{
         HttpSession session = request.getSession();
 
-        JsonResponse 	response 		= new JsonResponse();
+        XmlResponse 	response 		= new XmlResponse();
         boolean 		flag 			= true;
         StringBuilder 	actionMessage 	= new StringBuilder();
 
@@ -163,33 +185,4 @@ public class ExcelController {
 
     }
 
-    @Test
-    public void test(){
-        ExportVo vo = new ExportVo();
-        vo.setTitle("title");
-        Map<String,String> headRow = new HashMap<String, String>();
-        headRow.put("name","姓名");
-        headRow.put("grade","年级");
-        headRow.put("class","班级");
-        headRow.put("score","分数");
-        String title = "this is first sheet";
-        vo.setHeadRow( headRow );
-
-        Map<String,String> data1 = new HashMap<String, String>();
-        data1.put("name","张三");
-        data1.put("grade","3年级");
-        data1.put("class","1班");
-        data1.put("score","50");
-        List<Map<String,String>> datas = new ArrayList<Map<String, String>>();
-        datas.add(data1);
-//        vo.setValues(datas);
-        ObjectMapper mapper = new ObjectMapper();
-        String json = null;
-        try {
-            json = mapper.writeValueAsString(vo);
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }
-        System.out.println(json);
-    }
 }

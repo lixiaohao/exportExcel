@@ -24,4 +24,6 @@
                         <bean class="org.springframework.http.converter.ResourceHttpMessageConverter"/>
                 </mvc:message-converters>
         </mvc:annotation-driven>
+
+
 </beans>

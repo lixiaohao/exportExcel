@@ -1,5 +1,7 @@
 package com.zhongzhou.component.excel;
 
+import com.zhongzhou.web.excel.vo.ExportVo;
+import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.IndexedColors;
@@ -8,8 +10,13 @@ import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -23,6 +30,9 @@ public class ImportTemplate {
     private XSSFWorkbook wb;
     /**表头*/
     private Map<String,String> headRow;
+    private String[]            head;
+    private int                columnNum; //表头的列数
+    private ExportVo            vo;
     private CellStyle titleStyle;        // 标题行样式
     private Font titleFont;              // 标题行字体
     private  CellStyle dateStyle;         // 日期行样式
@@ -32,19 +42,9 @@ public class ImportTemplate {
     private  CellStyle contentStyle ;     // 内容行样式
     private  Font contentFont;            // 内容行字体
 
-    public ImportTemplate() {
+    public ImportTemplate(ExportVo vo) {
+        this.vo = vo ;
         init();
-    }
-
-    public  void export(String path){
-
-        try {
-            FileOutputStream out = new FileOutputStream(path);
-            wb.write(out);
-            wb.close();
-        }catch (Exception e){
-            e.printStackTrace();
-        }
     }
 
     private void init(){
@@ -59,6 +59,17 @@ public class ImportTemplate {
         contentStyle = wb.createCellStyle();
         contentFont = wb.createFont();
 
+        headRow = vo.getHeadRow();
+
+        Iterator<String> iterator = headRow.keySet().iterator();
+        this.columnNum = headRow.size();
+
+        String[] vars = new String[columnNum];
+        int i = 0;
+        while (iterator.hasNext()) {
+            vars[i++] = iterator.next();
+        }
+        head = vars;
         initTitleCellStyle();
         initTitleFont();
         initDateCellStyle();
@@ -68,6 +79,33 @@ public class ImportTemplate {
         initContentCellStyle();
         initContentFont();
     }
+
+
+    public  byte[] export(){
+
+        try {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            wb.write(out);
+            wb.close();
+            return out.toByteArray();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public  byte[] exportExcel(){
+        try {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            wb.write(out);
+            wb.close();
+            return out.toByteArray();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 
     /**
      * 创建一个sheet，默认名称为 ：Sheet1
@@ -125,6 +163,27 @@ public class ImportTemplate {
         }
 
         return sheet;
+    }
+
+
+    public void fillContent(List<Map<String,String>> values){
+        if (values == null) {
+            throw new IllegalArgumentException(" Invalid param\" values \"： "+values+",place check it.");
+        }
+
+        for (int v=0 ,len = values.size();v<len;v++) {
+
+            Map<String,String> map = values.get(v);
+
+            XSSFRow row  = wb.getSheetAt(0).createRow( v + 2 );
+            for (int i=0; i <columnNum;i++) {
+                String value = map.get(head[i]);
+                XSSFCell cell = row.createCell(i);
+                cell.setCellValue(value);
+            }
+        }
+
+
     }
 
     /**
