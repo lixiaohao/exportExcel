@@ -54,18 +54,20 @@ public class ExcelController {
 
         List<Map<String,String>> params = new ArrayList<Map<String, String>>();
         Map<String,String> dataMap =  new HashMap<String, String>();
-        headRow.put("name","刘德华");
-        headRow.put("age","15");
-        headRow.put("height","168厘米");
-        headRow.put("address","中国香港");
+        dataMap.put("name","刘德华");
+        dataMap.put("age","15");
+        dataMap.put("height","168厘米");
+        dataMap.put("address","中国香港");
         vo.setHeadRow(headRow);
         params.add( dataMap );
         vo.setValues( params );
 
-        ImportTemplate template = new ImportTemplate(vo);
-        template.createHeadRow(vo.getTitle(),"first Sheet",vo.getHeadRow());
-        template.fillContent(vo.getValues());
-        byte[] fileByte =template.exportExcel();
+        ImportTemplate template = new ImportTemplate(headRow,params);
+        template.setShowTitle(true);
+        template.setShowEnHead(true);
+        template.setSheetName("sheetname");
+        template.setTitle("标题");
+        byte[] fileByte  = template.export();
 
         HttpHeaders header = new HttpHeaders();
         String fileName = null;
@@ -84,78 +86,6 @@ public class ExcelController {
         return responseEntiry;
     }
 
-
-    @RequestMapping(value = "export",method = RequestMethod.POST)
-    public ResponseEntity<byte[]> importExcel(
-            @Valid @RequestBody ExportVo vo,
-            BindingResult result,
-            HttpServletRequest request,
-            HttpServletResponse resp){
-
-        ImportTemplate template = new ImportTemplate(vo);
-        template.createHeadRow(vo.getTitle(),"first Sheet",vo.getHeadRow());
-        template.fillContent(vo.getValues());
-        byte[] fileByte =template.exportExcel();
-
-        HttpHeaders header = new HttpHeaders();
-        String fileName = null;
-        ResponseEntity<byte[]> responseEntiry = null;
-
-        header.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        try{
-            fileName=new String("test.xlsx".getBytes("UTF-8"),"iso-8859-1");//为了解决中文名称乱码问题
-            header.setContentDispositionFormData("attachment", fileName);
-            responseEntiry = new ResponseEntity<byte[]>(fileByte,header, HttpStatus.CREATED);
-        }catch (UnsupportedEncodingException e){
-            e.printStackTrace();
-        }catch (IOException e1){
-            e1.printStackTrace();
-        }
-
-        return responseEntiry;
-    }
-
-    @RequestMapping(value = "template",method = RequestMethod.GET)
-
-    public ResponseEntity<byte[]> getTemplate(
-            @Valid @RequestBody ExportVo vo,
-            BindingResult result,
-            HttpServletRequest request,
-            HttpServletResponse response){
-
-        StringBuffer str = new StringBuffer("");
-//        if ( result.hasErrors() ) {
-//            List<ObjectError> errorList = result.getAllErrors();
-//            for(ObjectError error : errorList){
-//                str.append( error.getDefaultMessage() );
-//            }
-//            return str.toString();
-//        }
-
-        String sheetname = "firstsheet";
-
-        ImportTemplate template = new ImportTemplate(vo);
-        template.createHeadRow(vo.getTitle(),sheetname,vo.getHeadRow());
-        byte[] fileByte = template.export();
-
-        HttpHeaders header = new HttpHeaders();
-        ResponseEntity<byte[]> responseEntiry = null;
-
-        header.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-
-        String fileName = "template.xlsx";
-        try{
-            fileName=new String(fileName.getBytes("UTF-8"),"iso-8859-1");//为了解决中文名称乱码问题
-            header.setContentDispositionFormData("attachment", fileName);
-            responseEntiry = new ResponseEntity<byte[]>(fileByte,header, HttpStatus.CREATED);
-        }catch (UnsupportedEncodingException e){
-            e.printStackTrace();
-        }catch (IOException e1){
-            e1.printStackTrace();
-        }
-
-        return responseEntiry;
-    }
 
 //
 //

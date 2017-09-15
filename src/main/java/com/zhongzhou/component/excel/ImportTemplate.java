@@ -27,12 +27,20 @@ import java.util.Map;
  * @Company
  */
 public class ImportTemplate {
-    private XSSFWorkbook wb;
     /**表头*/
+    private String sheetName;   //第一个sheet名称
     private Map<String,String> headRow;
-    private String[]            head;
+
+    private String title;           //标题
+    private List<Map<String,String>> values;
     private int                columnNum; //表头的列数
+    private String[]            head;     //表头英文名称
+    private Boolean showTitle = true;      //是否有title
+    private Boolean showEnHead = false;   //默认不显示英文名
     private ExportVo            vo;
+
+    private XSSFWorkbook wb;
+
     private CellStyle titleStyle;        // 标题行样式
     private Font titleFont;              // 标题行字体
     private  CellStyle dateStyle;         // 日期行样式
@@ -42,24 +50,24 @@ public class ImportTemplate {
     private  CellStyle contentStyle ;     // 内容行样式
     private  Font contentFont;            // 内容行字体
 
-    public ImportTemplate(ExportVo vo) {
-        this.vo = vo ;
-        init();
+
+    public ImportTemplate(String sheetName, Map<String, String> headRow, String title, List<Map<String, String>> values, Boolean showTitle, Boolean showEnHead) {
+        this.sheetName = sheetName;
+        this.headRow = headRow;
+        this.title = title;
+        this.values = values;
+        this.showTitle = showTitle;
+        this.showEnHead = showEnHead;
     }
 
-    private void init(){
+    public ImportTemplate(Map<String, String> headRow, List<Map<String, String>> values) {
+        this.headRow = headRow;
+        this.values = values;
+    }
+
+
+    private void before(){
         wb = new XSSFWorkbook();
-
-        titleFont = wb.createFont();
-        titleStyle = wb.createCellStyle();
-        dateStyle = wb.createCellStyle();
-        dateFont = wb.createFont();
-        headStyle = wb.createCellStyle();
-        headFont = wb.createFont();
-        contentStyle = wb.createCellStyle();
-        contentFont = wb.createFont();
-
-        headRow = vo.getHeadRow();
 
         Iterator<String> iterator = headRow.keySet().iterator();
         this.columnNum = headRow.size();
@@ -70,30 +78,103 @@ public class ImportTemplate {
             vars[i++] = iterator.next();
         }
         head = vars;
-        initTitleCellStyle();
-        initTitleFont();
-        initDateCellStyle();
-        initDateFont();
-        initHeadCellStyle();
-        initHeadFont();
-        initContentCellStyle();
-        initContentFont();
     }
 
+
+//
+//    public  byte[] creatExcel(){
+//
+//        try {
+//            ByteArrayOutputStream out = new ByteArrayOutputStream();
+//            wb.write(out);
+//            wb.close();
+//            return out.toByteArray();
+//        }catch (Exception e){
+//            e.printStackTrace();
+//        }
+//        return null;
+//    }
+//
 
     public  byte[] export(){
 
-        try {
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            wb.write(out);
-            wb.close();
-            return out.toByteArray();
-        }catch (Exception e){
-            e.printStackTrace();
+        if ( showTitle && null == title && "".equals(title)) {
+            throw new  IllegalArgumentException("标题不能为空. title:"  + title);
         }
-        return null;
+        before();
+        createHeadRow();
+        fillContent();
+       return exportExcel();
     }
 
+    private void fillContent(){
+        if (values == null) {
+            throw new IllegalArgumentException(" Invalid param\" values \"： "+values+",place check it.");
+        }
+
+        int step = showEnHead?2:1;
+
+        for (int v=0 ,len = values.size();v<len;v++) {
+
+            Map<String,String> map = values.get(v);
+
+            XSSFRow row  = wb.getSheetAt(0).createRow( v + step );
+            for (int i=0; i <columnNum;i++) {
+                String value = map.get(head[i]);
+                XSSFCell cell = row.createCell(i);
+                cell.setCellValue(value);
+            }
+        }
+
+
+    }
+    private XSSFSheet createHeadRow(){
+        this.headRow = headRow;
+
+        int len = this.headRow.size();
+
+        createSheet(sheetName);
+
+        XSSFSheet sheet = wb.getSheetAt(0);
+
+        if (null != title && !"".equals(title)) {
+            createTitle(sheet,title,len);
+            showTitle = true;
+        }else {
+            showTitle = false;
+        }
+
+        XSSFRow headRowZh = showTitle?sheet.createRow(1):sheet.createRow(0);
+        int i = 0;
+        for ( Map.Entry<String,String> entry:this.headRow.entrySet() ) {
+
+            String keyZh = entry.getValue();
+            XSSFCell cellZh = headRowZh.createCell( i );
+            cellZh.setCellStyle( headStyle );
+            cellZh.setCellValue( keyZh );
+
+            if ( ++i == len ) {
+                break;
+            }
+        }
+
+        if ( showEnHead ) {
+            XSSFRow headRowEn = showEnHead?sheet.createRow(2):sheet.createRow(1);
+            int j = 0;
+            for ( Map.Entry<String,String> entry:this.headRow.entrySet() ) {
+                String keyEn = entry.getKey();
+                XSSFCell cellEn = headRowEn.createCell( j );
+                cellEn.setCellStyle( headStyle );
+                cellEn.setCellValue( keyEn );
+
+                if ( ++j == len ) {
+                    break;
+                }
+            }
+        }
+
+        return sheet;
+    }
     public  byte[] exportExcel(){
         try {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -132,59 +213,81 @@ public class ImportTemplate {
         titleCell.setCellValue( title );
     }
 
-    public XSSFSheet createHeadRow(String title,String sheetname,Map<String,String> headRow){
-        this.headRow = headRow;
+//    public XSSFSheet createHeadRow(String title,String sheetname,Map<String,String> headRow){
+//        this.headRow = headRow;
+//
+//        int len = this.headRow.size();
+//
+//        createSheet(sheetname);
+//        XSSFSheet sheet = wb.getSheetAt(0);
+//
+//        if (null != title && !"".equals(title)) {
+//            createTitle(sheet,title,len);
+//            showTitle = true;
+//        }else {
+//            showTitle = false;
+//        }
+//
+//        XSSFRow headRowZh = showTitle?sheet.createRow(1):sheet.createRow(0);
+//        int i = 0;
+//        for ( Map.Entry<String,String> entry:this.headRow.entrySet() ) {
+//
+//
+//            String keyZh = entry.getValue();
+//            XSSFCell cellZh = headRowZh.createCell( i );
+//            cellZh.setCellStyle( headStyle );
+//            cellZh.setCellValue( keyZh );
+//
+//
+////            XSSFCell cellEn = headRowEn.createCell( i );
+////            cellEn.setCellStyle( headStyle );
+////            cellEn.setCellValue( keyEn );
+//
+//            if ( ++i == len ) {
+//                break;
+//            }
+//        }
+//
+//        if ( showEnHead ) {
+//            XSSFRow headRowEn = showEnHead?sheet.createRow(2):sheet.createRow(1);
+//            int j = 0;
+//            for ( Map.Entry<String,String> entry:this.headRow.entrySet() ) {
+//                String keyEn = entry.getKey();
+//                XSSFCell cellEn = headRowEn.createCell( j );
+//                cellEn.setCellStyle( headStyle );
+//                cellEn.setCellValue( keyEn );
+//
+//                if ( ++j == len ) {
+//                    break;
+//                }
+//            }
+//        }
+//
+//        return sheet;
+//    }
 
-        int len = this.headRow.size();
 
-        createSheet(sheetname);
-        XSSFSheet sheet = wb.getSheetAt(0);
-        createTitle(sheet,title,len);
-
-        XSSFRow headRowEn = sheet.createRow(2);
-        XSSFRow headRowZh = sheet.createRow(1);
-        int i = 0;
-        for ( Map.Entry<String,String> entry:this.headRow.entrySet() ) {
-
-            String keyEn = entry.getKey();
-            String keyZh = entry.getValue();
-            XSSFCell cellZh = headRowZh.createCell( i );
-            cellZh.setCellStyle( headStyle );
-            cellZh.setCellValue( keyZh );
-
-
-            XSSFCell cellEn = headRowEn.createCell( i );
-            cellEn.setCellStyle( headStyle );
-            cellEn.setCellValue( keyEn );
-
-            if ( ++i == len ) {
-                break;
-            }
-        }
-
-        return sheet;
-    }
-
-
-    public void fillContent(List<Map<String,String>> values){
-        if (values == null) {
-            throw new IllegalArgumentException(" Invalid param\" values \"： "+values+",place check it.");
-        }
-
-        for (int v=0 ,len = values.size();v<len;v++) {
-
-            Map<String,String> map = values.get(v);
-
-            XSSFRow row  = wb.getSheetAt(0).createRow( v + 2 );
-            for (int i=0; i <columnNum;i++) {
-                String value = map.get(head[i]);
-                XSSFCell cell = row.createCell(i);
-                cell.setCellValue(value);
-            }
-        }
-
-
-    }
+//    public void fillContent(List<Map<String,String>> values){
+//        if (values == null) {
+//            throw new IllegalArgumentException(" Invalid param\" values \"： "+values+",place check it.");
+//        }
+//
+//        int step = showEnHead?2:1;
+//
+//        for (int v=0 ,len = values.size();v<len;v++) {
+//
+//            Map<String,String> map = values.get(v);
+//
+//            XSSFRow row  = wb.getSheetAt(0).createRow( v + step );
+//            for (int i=0; i <columnNum;i++) {
+//                String value = map.get(head[i]);
+//                XSSFCell cell = row.createCell(i);
+//                cell.setCellValue(value);
+//            }
+//        }
+//
+//
+//    }
 
     /**
      * @Description: 初始化标题行样式
@@ -292,5 +395,55 @@ public class ImportTemplate {
         contentFont.setCharSet(Font.DEFAULT_CHARSET);
         contentFont.setColor(IndexedColors.BLUE_GREY.index);
     }
+
+
+    public String getSheetName() {
+        return sheetName;
+    }
+
+    public void setSheetName(String sheetName) {
+        this.sheetName = sheetName;
+    }
+
+    public Map<String, String> getHeadRow() {
+        return headRow;
+    }
+
+    public void setHeadRow(Map<String, String> headRow) {
+        this.headRow = headRow;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public List<Map<String, String>> getValues() {
+        return values;
+    }
+
+    public void setValues(List<Map<String, String>> values) {
+        this.values = values;
+    }
+
+    public Boolean getShowTitle() {
+        return showTitle;
+    }
+
+    public void setShowTitle(Boolean showTitle) {
+        this.showTitle = showTitle;
+    }
+
+    public Boolean getShowEnHead() {
+        return showEnHead;
+    }
+
+    public void setShowEnHead(Boolean showEnHead) {
+        this.showEnHead = showEnHead;
+    }
+
 
 }
