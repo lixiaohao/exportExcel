@@ -44,11 +44,8 @@ public class ImportTemplate {
     private CellStyle titleStyle;        // 标题行样式
     private Font titleFont;              // 标题行字体
     private  CellStyle dateStyle;         // 日期行样式
-    private  Font dateFont;               // 日期行字体
     private  CellStyle headStyle;         // 表头行样式
-    private  Font headFont;               // 表头行字体
     private  CellStyle contentStyle ;     // 内容行样式
-    private  Font contentFont;            // 内容行字体
 
 
     public ImportTemplate(String sheetName, Map<String, String> headRow, String title, List<Map<String, String>> values, Boolean showTitle, Boolean showEnHead) {
@@ -294,8 +291,10 @@ public class ImportTemplate {
      */
     private void initTitleCellStyle()
     {
+        titleStyle = wb.createCellStyle();
+        //文字居中
         titleStyle.setAlignment(CellStyle.ALIGN_CENTER);
-        titleStyle.setVerticalAlignment(CellStyle.VERTICAL_CENTER);
+//        titleStyle.setVerticalAlignment(CellStyle.VERTICAL_CENTER);
         titleStyle.setFont(titleFont);
         titleStyle.setFillBackgroundColor(IndexedColors.SKY_BLUE.index);
     }
@@ -306,7 +305,7 @@ public class ImportTemplate {
     {
         dateStyle.setAlignment(CellStyle.ALIGN_CENTER_SELECTION);
         dateStyle.setVerticalAlignment(CellStyle.VERTICAL_CENTER);
-        dateStyle.setFont(dateFont);
+//        dateStyle.setFont(dateFont);
         dateStyle.setFillBackgroundColor(IndexedColors.SKY_BLUE.index);
     }
 
@@ -315,9 +314,10 @@ public class ImportTemplate {
      */
     private void initHeadCellStyle()
     {
+        headStyle = wb.createCellStyle();
         headStyle.setAlignment(CellStyle.ALIGN_CENTER);
         headStyle.setVerticalAlignment(CellStyle.VERTICAL_CENTER);
-        headStyle.setFont(headFont);
+//        headStyle.setFont(headFont);
         headStyle.setFillBackgroundColor(IndexedColors.YELLOW.index);
         headStyle.setBorderTop(CellStyle.BORDER_MEDIUM);
         headStyle.setBorderBottom(CellStyle.BORDER_THIN);
@@ -336,7 +336,7 @@ public class ImportTemplate {
     {
         contentStyle.setAlignment(CellStyle.ALIGN_CENTER);
         contentStyle.setVerticalAlignment(CellStyle.VERTICAL_CENTER);
-        contentStyle.setFont(contentFont);
+//        contentStyle.setFont(contentFont);
         contentStyle.setBorderTop(CellStyle.BORDER_THIN);
         contentStyle.setBorderBottom(CellStyle.BORDER_THIN);
         contentStyle.setBorderLeft(CellStyle.BORDER_THIN);
@@ -365,11 +365,12 @@ public class ImportTemplate {
      */
     private void initDateFont()
     {
-        dateFont.setFontName("隶书");
-        dateFont.setFontHeightInPoints((short) 10);
-        dateFont.setBoldweight(Font.BOLDWEIGHT_BOLD);
-        dateFont.setCharSet(Font.DEFAULT_CHARSET);
-        dateFont.setColor(IndexedColors.BLUE_GREY.index);
+//        Font dateFont =
+//        dateFont.setFontName("隶书");
+//        dateFont.setFontHeightInPoints((short) 10);
+//        dateFont.setBoldweight(Font.BOLDWEIGHT_BOLD);
+//        dateFont.setCharSet(Font.DEFAULT_CHARSET);
+//        dateFont.setColor(IndexedColors.BLUE_GREY.index);
     }
 
     /**
@@ -377,11 +378,11 @@ public class ImportTemplate {
      */
     private void initHeadFont()
     {
-        headFont.setFontName("宋体");
-        headFont.setFontHeightInPoints((short) 10);
-        headFont.setBoldweight(Font.BOLDWEIGHT_BOLD);
-        headFont.setCharSet(Font.DEFAULT_CHARSET);
-        headFont.setColor(IndexedColors.BLUE_GREY.index);
+//        headFont.setFontName("宋体");
+//        headFont.setFontHeightInPoints((short) 10);
+//        headFont.setBoldweight(Font.BOLDWEIGHT_BOLD);
+//        headFont.setCharSet(Font.DEFAULT_CHARSET);
+//        headFont.setColor(IndexedColors.BLUE_GREY.index);
     }
 
     /**
@@ -389,11 +390,11 @@ public class ImportTemplate {
      */
     private void initContentFont()
     {
-        contentFont.setFontName("宋体");
-        contentFont.setFontHeightInPoints((short) 10);
-        contentFont.setBoldweight(Font.BOLDWEIGHT_NORMAL);
-        contentFont.setCharSet(Font.DEFAULT_CHARSET);
-        contentFont.setColor(IndexedColors.BLUE_GREY.index);
+//        contentFont.setFontName("宋体");
+//        contentFont.setFontHeightInPoints((short) 10);
+//        contentFont.setBoldweight(Font.BOLDWEIGHT_NORMAL);
+//        contentFont.setCharSet(Font.DEFAULT_CHARSET);
+//        contentFont.setColor(IndexedColors.BLUE_GREY.index);
     }
 
 
