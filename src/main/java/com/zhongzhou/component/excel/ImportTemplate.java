@@ -1,7 +1,5 @@
 package com.zhongzhou.component.excel;
 
-import com.zhongzhou.web.excel.vo.ExportVo;
-import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.IndexedColors;
@@ -10,11 +8,11 @@ import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.junit.Test;
 
+import javax.servlet.http.HttpServletResponse;
 import java.io.ByteArrayOutputStream;
-import java.io.FileOutputStream;
-import java.util.HashMap;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -27,25 +25,30 @@ import java.util.Map;
  * @Company
  */
 public class ImportTemplate {
+    /**标题*/
+    private String title;
+    /**第一个sheet名称*/
+    private String sheetName;
     /**表头*/
-    private String sheetName;   //第一个sheet名称
     private Map<String,String> headRow;
-
-    private String title;           //标题
+    /** 需要导出的内容 */
     private List<Map<String,String>> values;
-    private int                columnNum; //表头的列数
-    private String[]            head;     //表头英文名称
-    private Boolean showTitle = true;      //是否有title
-    private Boolean showEnHead = false;   //默认不显示英文名
-    private ExportVo            vo;
-
-    private XSSFWorkbook wb;
-
-    private CellStyle titleStyle;        // 标题行样式
-    private Font titleFont;              // 标题行字体
-    private  CellStyle dateStyle;         // 日期行样式
-    private  CellStyle headStyle;         // 表头行样式
-    private  CellStyle contentStyle ;     // 内容行样式
+    /** 是否展示title */
+    private Boolean showTitle = false;
+    /**是否显示英文表头*/
+    private Boolean showEnHead = false;
+    /***
+     * 展示标题行
+     */
+    public void showTitle () {
+        this.showTitle = true;
+    }
+    /***
+     * 展示英文表头
+     */
+    public void showEnHead(){
+        this.showEnHead = true;
+    }
 
 
     public ImportTemplate(String sheetName, Map<String, String> headRow, String title, List<Map<String, String>> values, Boolean showTitle, Boolean showEnHead) {
@@ -63,50 +66,155 @@ public class ImportTemplate {
     }
 
 
+
+    public String getSheetName() {
+        return sheetName;
+    }
+
+    public void setSheetName(String sheetName) {
+        this.sheetName = sheetName;
+    }
+
+    public Map<String, String> getHeadRow() {
+        return headRow;
+    }
+
+    public void setHeadRow(Map<String, String> headRow) {
+        this.headRow = headRow;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public List<Map<String, String>> getValues() {
+        return values;
+    }
+
+    public void setValues(List<Map<String, String>> values) {
+        this.values = values;
+    }
+
+    /***
+     * 导出Excel到前端
+     * @param response
+     * @param fileName
+     */
+    public void write(HttpServletResponse response,String fileName) throws IOException {
+
+        this.convertDataIntoExcel();
+
+        String var = this.reMakeFileName(fileName);
+        response.setHeader("Content-Disposition", "attachment;filename=" + var );
+        try {
+            OutputStream out = response.getOutputStream();
+            wb.write( out );
+            out.flush();
+            out.close();
+        }catch (IOException e) {
+            e.printStackTrace();
+            throw  new IOException("导出IO异常:",e.getCause());
+        }
+
+    }
+
+    /***
+     * 把Excel转化为byte[]
+     * @return
+     */
+    public  byte[] importToByte(){
+        convertDataIntoExcel();
+       return toByte();
+    }
+
+
+
+    /**表头的总列数*/
+    private int COLUMNS;
+    /** 表头英文名称 */
+    private String[]      HEAD;
+    /** 后缀 */
+    private final String    SUFFIX = ".xlsx";
+    /** Excel默认名称 */
+    private final String    DEFAULT_NAME = "import";
+    /** 默认sheet名称 */
+    private final String    DEFAULT_SHEET_NAMES[]= {"sheet1"};
+    private XSSFWorkbook wb;
+
+    private CellStyle titleStyle;        // 标题行样式
+    private Font titleFont;              // 标题行字体
+    private  CellStyle dateStyle;         // 日期行样式
+    private  CellStyle headStyle;         // 表头行样式
+    private  CellStyle contentStyle ;     // 内容行样式
+
+
+    /***
+     * 将数据转为Excel
+     */
+    private void convertDataIntoExcel() {
+        this.validateParams();
+        this.before();
+        this.createHeadRow();
+        this.fillContent();
+    }
+
+
+    private void validateParams() {
+        if ( showTitle && null == title && "".equals(title)) {
+            throw new  IllegalArgumentException("标题不能为空. title:"  + title);
+        }
+        if ( headRow == null) {
+            throw new  IllegalArgumentException("表头不能为空. headRow:"  + headRow);
+        }
+        if (  headRow.size()==0 ) {
+            throw new  IllegalArgumentException("表头内容不能为空. headRow.size():0");
+        }
+
+    }
+
     private void before(){
-        wb = new XSSFWorkbook();
 
         Iterator<String> iterator = headRow.keySet().iterator();
-        this.columnNum = headRow.size();
+        this.COLUMNS = headRow.size();
 
-        String[] vars = new String[columnNum];
+        String[] vars = new String[COLUMNS];
         int i = 0;
         while (iterator.hasNext()) {
             vars[i++] = iterator.next();
         }
-        head = vars;
+        HEAD = vars;
+
+        this.initWorkBook();
     }
 
+    /***
+     * 重构文件名
+     * @param fileName
+     * @return
+     */
+    private String reMakeFileName( String fileName ) {
 
-//
-//    public  byte[] creatExcel(){
-//
-//        try {
-//            ByteArrayOutputStream out = new ByteArrayOutputStream();
-//            wb.write(out);
-//            wb.close();
-//            return out.toByteArray();
-//        }catch (Exception e){
-//            e.printStackTrace();
-//        }
-//        return null;
-//    }
-//
-
-    public  byte[] export(){
-
-        if ( showTitle && null == title && "".equals(title)) {
-            throw new  IllegalArgumentException("标题不能为空. title:"  + title);
+        if ( fileName == null || "".equals(fileName) ) {
+            fileName = DEFAULT_NAME+SUFFIX;
         }
-        before();
-        createHeadRow();
-        fillContent();
-       return exportExcel();
+
+        if ( !fileName.endsWith( SUFFIX ) ) {
+            fileName += SUFFIX;
+        }
+
+        return fileName;
     }
+
 
     private void fillContent(){
+
+        XSSFSheet sheetAt0 = wb.getSheetAt(0);
         if (values == null) {
-            throw new IllegalArgumentException(" Invalid param\" values \"： "+values+",place check it.");
+            return;
         }
 
         int step = showEnHead?2:1;
@@ -115,9 +223,9 @@ public class ImportTemplate {
 
             Map<String,String> map = values.get(v);
 
-            XSSFRow row  = wb.getSheetAt(0).createRow( v + step );
-            for (int i=0; i <columnNum;i++) {
-                String value = map.get(head[i]);
+            XSSFRow row  = sheetAt0.createRow( v + step );
+            for (int i=0; i <COLUMNS;i++) {
+                String value = map.get(HEAD[i]);
                 XSSFCell cell = row.createCell(i);
                 cell.setCellValue(value);
             }
@@ -125,21 +233,19 @@ public class ImportTemplate {
 
 
     }
+
+    private void initWorkBook() {
+        wb = new XSSFWorkbook();
+        this.createSheet(sheetName);
+    }
+
     private XSSFSheet createHeadRow(){
-        this.headRow = headRow;
 
         int len = this.headRow.size();
 
-        createSheet(sheetName);
-
         XSSFSheet sheet = wb.getSheetAt(0);
 
-        if (null != title && !"".equals(title)) {
-            createTitle(sheet,title,len);
-            showTitle = true;
-        }else {
-            showTitle = false;
-        }
+        this.createTitle(sheet,title,len);
 
         XSSFRow headRowZh = showTitle?sheet.createRow(1):sheet.createRow(0);
         int i = 0;
@@ -156,7 +262,7 @@ public class ImportTemplate {
         }
 
         if ( showEnHead ) {
-            XSSFRow headRowEn = showEnHead?sheet.createRow(2):sheet.createRow(1);
+            XSSFRow headRowEn = showTitle?sheet.createRow(2):sheet.createRow(1);
             int j = 0;
             for ( Map.Entry<String,String> entry:this.headRow.entrySet() ) {
                 String keyEn = entry.getKey();
@@ -172,7 +278,7 @@ public class ImportTemplate {
 
         return sheet;
     }
-    public  byte[] exportExcel(){
+    private   byte[] toByte(){
         try {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             wb.write(out);
@@ -188,11 +294,18 @@ public class ImportTemplate {
     /**
      * 创建一个sheet，默认名称为 ：Sheet1
      * @param
-     * @param sheetname
+     * @param sheetName
      */
-    private void createSheet(String sheetname){
-        wb.createSheet( (sheetname==null || sheetname.equals(""))?"Sheet1":sheetname );
+    private void createSheet(String sheetName){
+        String var = reMakeSheetName(sheetName);
+        wb.createSheet( var );
     }
+
+    private String reMakeSheetName( String sheetName){
+        return  sheetName==null || "".equals(sheetName) ? DEFAULT_SHEET_NAMES[0]:sheetName;
+    }
+
+
 
     /**
      * 创建 名称 ，需要合并单元格
@@ -201,6 +314,11 @@ public class ImportTemplate {
      * @param length
      */
     private void createTitle(XSSFSheet sheet, String title, int length){
+
+        if (!showTitle) {
+            return;
+        }
+
         CellRangeAddress titleRange = new CellRangeAddress(0, 0, 0, length-1);
         sheet.addMergedRegion(titleRange);
         XSSFRow titleRow = sheet.createRow(0);
@@ -395,55 +513,6 @@ public class ImportTemplate {
 //        contentFont.setBoldweight(Font.BOLDWEIGHT_NORMAL);
 //        contentFont.setCharSet(Font.DEFAULT_CHARSET);
 //        contentFont.setColor(IndexedColors.BLUE_GREY.index);
-    }
-
-
-    public String getSheetName() {
-        return sheetName;
-    }
-
-    public void setSheetName(String sheetName) {
-        this.sheetName = sheetName;
-    }
-
-    public Map<String, String> getHeadRow() {
-        return headRow;
-    }
-
-    public void setHeadRow(Map<String, String> headRow) {
-        this.headRow = headRow;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public List<Map<String, String>> getValues() {
-        return values;
-    }
-
-    public void setValues(List<Map<String, String>> values) {
-        this.values = values;
-    }
-
-    public Boolean getShowTitle() {
-        return showTitle;
-    }
-
-    public void setShowTitle(Boolean showTitle) {
-        this.showTitle = showTitle;
-    }
-
-    public Boolean getShowEnHead() {
-        return showEnHead;
-    }
-
-    public void setShowEnHead(Boolean showEnHead) {
-        this.showEnHead = showEnHead;
     }
 
 

@@ -40,7 +40,7 @@ public class ExcelController {
 
 
     @RequestMapping(value = "excel",method = RequestMethod.POST)
-    public ResponseEntity<byte[]> export( HttpServletResponse response ){
+    public void export( HttpServletResponse response ){
 
         response.setHeader("Access-Control-Allow-Origin", "*");//解决跨域问题
 
@@ -63,27 +63,43 @@ public class ExcelController {
         vo.setValues( params );
 
         ImportTemplate template = new ImportTemplate(headRow,params);
-        template.setShowTitle(true);
-        template.setShowEnHead(true);
+        template.showEnHead();
         template.setSheetName("sheetname");
         template.setTitle("标题");
-        byte[] fileByte  = template.export();
-
-        HttpHeaders header = new HttpHeaders();
-        String fileName = null;
-        ResponseEntity<byte[]> responseEntiry = null;
-        header.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        try{
-            fileName=new String("test.xlsx".getBytes("UTF-8"),"iso-8859-1");//为了解决中文名称乱码问题
-            header.setContentDispositionFormData("attachment", fileName);
-            responseEntiry = new ResponseEntity<byte[]>(fileByte,header, HttpStatus.CREATED);
-        }catch (UnsupportedEncodingException e){
+        try {
+            template.write(response,null);
+        } catch (IOException e) {
             e.printStackTrace();
-        }catch (IOException e1){
-            e1.printStackTrace();
         }
+//        byte[] fileByte  = template.export();
+//
+//        String fileName = "hehehhe.xlsx";
+//
+//        try {
+//            response.setHeader("Content-Disposition", "attachment;filename=" + fileName);
+//            OutputStream out = response.getOutputStream();
+//            out.write(fileByte,0,fileByte.length);
+//
+//            out.flush();
+//            out.close();
+//        }catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
-        return responseEntiry;
+//        HttpHeaders header = new HttpHeaders();
+//        String fileName = null;
+//        ResponseEntity<byte[]> responseEntiry = null;
+//        header.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+//        try{
+//            fileName=new String("test.xlsx".getBytes("UTF-8"),"iso-8859-1");//为了解决中文名称乱码问题
+//            header.setContentDispositionFormData("attachment", fileName);
+//            responseEntiry = new ResponseEntity<byte[]>(fileByte,header, HttpStatus.CREATED);
+//        }catch (UnsupportedEncodingException e){
+//            e.printStackTrace();
+//        }catch (IOException e1){
+//            e1.printStackTrace();
+//        }
+
     }
 
 
